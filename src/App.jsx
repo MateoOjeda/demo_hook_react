@@ -1,140 +1,189 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Header from './components/Header'
 import Footer from './components/Footer'
+import TaskForm from './components/TaskForm'
+import TaskList from './components/TaskList'
 import './App.css'
 
+const API_URL = 'http://localhost:3000/tasks'
+
 function App() {
-  const [carrito, setCarrito] = useState([])
-  const [producto, setProducto] = useState('')
-  const [precio, setPrecio] = useState('')
-  const [cantidad, setCantidad] = useState('')
+  const [tareas, setTareas] = useState([])
+  const [tareaEditar, setTareaEditar] = useState(null)
 
-  // funcion para agregar productos al carrito
-  const agregarProducto = () => {
-    const nombre = producto.trim()
-    const precioNumero = Number(precio)
-    const cantidadNumero = Number(cantidad)
+  // OBTENER TODAS LAS TAREAS
+  const obtenerTareas = async () => {
+    try {
+      const respuesta = await fetch(API_URL)
 
-    if (!nombre || Number.isNaN(precioNumero) || precioNumero <= 0) {
-      return
+      if (!respuesta.ok) {
+        throw new Error('Error al obtener las tareas')
+      }
+
+      const datos = await respuesta.json()
+
+      setTareas(datos)
+    } catch (error) {
+      console.error('Error al obtener tareas:', error)
     }
+  }
 
-    if (Number.isNaN(cantidadNumero) || cantidadNumero <= 0) {
-      return
+  // CARGAR LAS TAREAS AL INICIAR LA APLICACIÓN
+// CARGAR LAS TAREAS AL INICIAR LA APLICACIÓN
+useEffect(() => {
+  let activo = true
+
+  fetch(API_URL)
+    .then((respuesta) => {
+      if (!respuesta.ok) {
+        throw new Error('Error al obtener las tareas')
+      }
+
+      return respuesta.json()
+    })
+    .then((datos) => {
+      if (activo) {
+        setTareas(datos)
+      }
+    })
+    .catch((error) => {
+      console.error('Error al obtener tareas:', error)
+    })
+
+  return () => {
+    activo = false
+  }
+}, [])
+
+  // CREAR UNA NUEVA TAREA
+  const agregarTarea = async (tarea) => {
+    try {
+      const respuesta = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(tarea),
+      })
+
+      if (!respuesta.ok) {
+        throw new Error('Error al crear la tarea')
+      }
+
+      await obtenerTareas()
+    } catch (error) {
+      console.error('Error al crear tarea:', error)
     }
+  }
 
-    const existente = carrito.findIndex(
-      (item) => item.producto.toLowerCase() === nombre.toLowerCase(),
+  // SELECCIONAR UNA TAREA PARA EDITAR
+  const editarTarea = (tarea) => {
+    setTareaEditar(tarea)
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    })
+  }
+
+  // ACTUALIZAR UNA TAREA
+  const actualizarTarea = async (tarea) => {
+    try {
+      const respuesta = await fetch(`${API_URL}/${tarea.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(tarea),
+      })
+
+      if (!respuesta.ok) {
+        throw new Error('Error al actualizar la tarea')
+      }
+
+      setTareaEditar(null)
+
+      await obtenerTareas()
+    } catch (error) {
+      console.error('Error al actualizar tarea:', error)
+    }
+  }
+
+  // CANCELAR LA EDICIÓN
+  const cancelarEdicion = () => {
+    setTareaEditar(null)
+  }
+
+  // ELIMINAR UNA TAREA
+  const eliminarTarea = async (id) => {
+    const confirmar = window.confirm(
+      '¿Está seguro de eliminar esta tarea?'
     )
 
-    if (existente !== -1) {
-      const actualizado = carrito.map((item, index) =>
-        index === existente
-          ? { ...item, cantidad: item.cantidad + cantidadNumero }
-          : item,
-      )
-      setCarrito(actualizado)
-    } else {
-      setCarrito([
-        ...carrito,
-        { producto: nombre, precio: precioNumero, cantidad: cantidadNumero },
-      ])
+    if (!confirmar) {
+      return
     }
 
-    setProducto('')
-    setPrecio('')
-    setCantidad('')
+    try {
+      const respuesta = await fetch(`${API_URL}/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (!respuesta.ok) {
+        throw new Error('Error al eliminar la tarea')
+      }
+
+      if (tareaEditar?.id === id) {
+        setTareaEditar(null)
+      }
+
+      await obtenerTareas()
+    } catch (error) {
+      console.error('Error al eliminar tarea:', error)
+    }
   }
 
-  // funcion para eliminar productos del carrito
-  const eliminarProducto = (index) => {
-    setCarrito(carrito.filter((_, i) => i !== index))
-  }
+  // FINALIZAR UNA TAREA
+  const finalizarTarea = async (id) => {
+    try {
+      const respuesta = await fetch(
+        `${API_URL}/${id}/finalizar`,
+        {
+          method: 'PATCH',
+        }
+      )
 
-  const total = carrito.reduce(
-    (acc, item) => acc + item.precio * item.cantidad,
-    0,
-  )
+      if (!respuesta.ok) {
+        throw new Error('Error al finalizar la tarea')
+      }
 
- // funcion para vaciar el carrito
-  const vaciarCarrito = () => {
-    setCarrito([])
+      await obtenerTareas()
+    } catch (error) {
+      console.error('Error al finalizar tarea:', error)
+    }
   }
 
   return (
     <>
       <Header />
-      <main className="carrito">
-        <h1>demo de practica de react</h1>
 
-        <form
-          className="carrito-form"
-          onSubmit={(event) => {
-            event.preventDefault()
-            agregarProducto()
-          }}
-        >
-          <input
-            type="text"
-            placeholder="Producto"
-            value={producto}
-            onChange={(event) => setProducto(event.target.value)}
-          />
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="Precio"
-            value={precio}
-            onChange={(event) => setPrecio(event.target.value)}
-          />
-          <input
-            type="number"
-            min="1"
-            step="1"
-            placeholder="Cantidad"
-            value={cantidad}
-            onChange={(event) => setCantidad(event.target.value)}
-          />
-        </form>
+      <main className="app-container">
+<TaskForm
+  key={tareaEditar?.id ?? 'nueva'}
+  agregarTarea={agregarTarea}
+  tareaEditar={tareaEditar}
+  actualizarTarea={actualizarTarea}
+  cancelarEdicion={cancelarEdicion}
+/>
 
-        <div className="carrito-botones">
-          <button className="Button_Agregar" type="button" onClick={agregarProducto}>
-            Agregar Producto
-          </button>
-          <button
-            className="Button_Vaciar"
-            type="button"
-            onClick={vaciarCarrito}
-            disabled={carrito.length === 0}
-          >
-            Vaciar Carrito
-          </button>
-        </div>
-
-        {carrito.length === 0 ? (
-          <p>El carrito esta vacio</p>
-        ) : (
-          <ul className="carrito-lista">
-            {carrito.map((item, index) => (
-              <li key={`${item.producto}-${index}`}>
-                <span>
-                  {item.producto} — ${item.precio} x {item.cantidad}
-                </span>
-                <button
-                  className="Button_Eliminar"
-                  type="button"
-                  onClick={() => eliminarProducto(index)}
-                >
-                  Eliminar Producto
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <p className="carrito-total">Total: ${total.toFixed(2)}</p>
+        <TaskList
+          tareas={tareas}
+          editarTarea={editarTarea}
+          eliminarTarea={eliminarTarea}
+          finalizarTarea={finalizarTarea}
+        />
       </main>
+
       <Footer />
     </>
   )

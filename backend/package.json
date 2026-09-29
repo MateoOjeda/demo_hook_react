@@ -1,0 +1,17 @@
+{
+  "name": "task-backend",
+  "version": "1.0.0",
+  "description": "Backend del Trabajo Practico 5",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.4",
+    "express": "^5.2.1",
+    "pg": "^8.23.0"
+  }
+}

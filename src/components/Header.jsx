@@ -1,10 +1,11 @@
-
-
-const Header = () => {
+function Header() {
   return (
-    <div>
-      <h2>Este es el header</h2>
-    </div>
+    <header className="header">
+      <div>
+        <h1>Task Manager</h1>
+        <p>Administrador de tareas de proyectos</p>
+      </div>
+    </header>
   )
 }
 

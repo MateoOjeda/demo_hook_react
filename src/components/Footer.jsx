@@ -1,10 +1,11 @@
-
-
-const Footer = () => {
+function Footer() {
   return (
-    <div>
-      <p> este es el footer® derechos reservados </p>
-    </div>
+    <footer className="footer">
+      <p>
+        Programación Avanzada - Licenciatura en Sistemas de Información
+      </p>
+      <p>Trabajo Práctico 5 - React - Ojeda Lado Mateo </p>
+    </footer>
   )
 }
 
